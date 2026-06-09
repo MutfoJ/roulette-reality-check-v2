@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://roulette-reality-check.vercel.app/sitemap.xml
