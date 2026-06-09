@@ -907,7 +907,30 @@ export default function App() {
           </div>
 
           {tab === "insights" && (
-            <InsightsPanel results={results} wheelType={wheelType} betKind={betKind} />
+            <>
+              <div className="panel">
+                <div className="sim-topline" style={{ marginBottom: 0 }}>
+                  <div>
+                    <span className="eyebrow"><Gauge size={14} /> Spin engine</span>
+                    <h2>{results.length.toLocaleString()} / {targetSpins.toLocaleString()} spins</h2>
+                    <span className={`progress-mini ${sessionStop === "target" ? "good" : sessionStop ? "bad" : ""}`}>{statusLine}</span>
+                  </div>
+                  <div className="action-row">
+                    <button className="btn primary" onClick={() => setIsRunning(v => !v)} disabled={!!sessionStop} title={isRunning ? "Pause" : "Run continuously"}>
+                      {isRunning ? <><Pause size={16} /> Pause</> : <><Play size={16} /> Run</>}
+                    </button>
+                    <button className="btn" onClick={singleSpin} disabled={isRunning || singleSpinning || !!sessionStop} title="Single spin">
+                      <ChevronRight size={16} /> Spin
+                    </button>
+                    {[1000, 10000].map(n => (
+                      <button key={n} className="btn" onClick={() => quickRun(n)} disabled={isRunning || !!sessionStop}>+{n.toLocaleString()}</button>
+                    ))}
+                    <button className="btn icon" onClick={reset} title="Reset bankroll & history"><RotateCcw size={16} /></button>
+                  </div>
+                </div>
+              </div>
+              <InsightsPanel results={deferredResults} wheelType={wheelType} betKind={betKind} />
+            </>
           )}
         </section>
       </div>
