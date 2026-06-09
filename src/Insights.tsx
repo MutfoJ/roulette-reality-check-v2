@@ -35,6 +35,8 @@ function useInsights(results: SpinResult[], wheelType: WheelType) {
       }
     }
     const total = results.length;
+    let wins = 0;
+    for (const r of results) if (r.won) wins++;
     const expectedPer = total / size;
     const pockets: PocketStat[] = [];
     for (let n = 0; n <= 37; n++) {
@@ -72,7 +74,7 @@ function useInsights(results: SpinResult[], wheelType: WheelType) {
       streak = r.won ? 0 : streak + 1;
     }
     return {
-      total, expectedPer, pockets,
+      total, wins, expectedPer, pockets,
       splits: { red, black, green, even, odd, low, high },
       lossDist: streakDist(lossStreaks, 10),
       winDist: streakDist(winStreaks, 10),
@@ -111,7 +113,12 @@ function SplitBar({ label, a, b, aLabel, bLabel, expectedA }: {
 
 export function InsightsPanel({ results, wheelType, betKind }: Props) {
   const ins = useInsights(results, wheelType);
-  const p = coverageOf(betKind === "manual" ? "red" : betKind, wheelType);
+  // Baseline = the session's own overall hit rate, so the comparison stays
+  // valid even if the bet target changed mid-session. Falls back to the
+  // theoretical coverage of the current bet when there's no data yet.
+  const p = ins.total > 0
+    ? ins.wins / ins.total
+    : coverageOf(betKind === "manual" ? "red" : betKind, wheelType);
   const evenChanceExpected = (18 / getWheelSize(wheelType)) * 100;
 
   if (ins.total === 0) {
@@ -181,19 +188,19 @@ export function InsightsPanel({ results, wheelType, betKind }: Props) {
         </div>
         <p className="insight-sub" style={{ marginTop: 8 }}>
           Streak lengths follow a geometric decay — each extra spin of a streak is a fresh independent event.
-          For your current bet, the chance a losing streak extends one more spin is {(100 * (1 - p)).toFixed(1)}%, every time.
+          In this session, the chance a losing streak extended one more spin was {(100 * (1 - p)).toFixed(1)}%, every time.
         </p>
       </div>
 
       <div className="panel">
         <div className="section-title"><Layers size={14} /> The gambler's fallacy, measured</div>
         <p className="insight-sub">
-          "After {`N`} losses in a row, a win is due." Here's your session's actual win rate immediately after losing streaks,
-          next to the constant single-spin win probability ({(p * 100).toFixed(1)}% for the current bet):
+          "After {`N`} losses in a row, a win is due." Here's your session's actual win rate immediately after losing
+          streaks, next to this session's overall per-spin win rate ({(p * 100).toFixed(1)}% across all {ins.total.toLocaleString()} spins):
         </p>
         <div className="fallacy-table" role="table">
           <div className="fallacy-row fallacy-head" role="row">
-            <span>After … losses</span><span>Samples</span><span>Observed next-spin win</span><span>True probability</span>
+            <span>After … losses</span><span>Samples</span><span>Observed next-spin win</span><span>Session win rate</span>
           </div>
           {ins.afterLosses.map(a => (
             <div className="fallacy-row" role="row" key={a.k}>
@@ -205,7 +212,8 @@ export function InsightsPanel({ results, wheelType, betKind }: Props) {
           ))}
         </div>
         <p className="insight-sub" style={{ marginTop: 8 }}>
-          With enough samples the observed column converges to the constant — the wheel has no memory.
+          If losses made wins "due", the observed column would climb with the streak length. It doesn't — it hovers
+          around the same constant at every depth. The wheel has no memory.
         </p>
       </div>
     </>
